@@ -1,0 +1,23 @@
+%{ for endpoint in endpoints ~}
+%{ if index(endpoints, endpoint) > 0 ~}
+---
+%{ endif ~}
+apiVersion: v1
+kind: Service
+metadata:
+  name: ${endpoint.domain}
+spec:
+  type: ClusterIP
+  ports:
+    - port: ${endpoint.port}
+---
+kind: Endpoints
+apiVersion: v1
+metadata:
+  name: ${endpoint.domain}
+subsets:
+  - addresses:
+      - ip: ${endpoint.ip}
+    ports:
+      - port: ${endpoint.port}
+%{ endfor ~}
