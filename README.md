@@ -56,7 +56,7 @@ module "aidbox_postgres" {
 }
 
 module "k8_infra_conf" {
-  source = "./kubernetes-infrastructure-configuration"
+  source = "https://github.com/Ferlab-Ste-Justine/kubernetes-infrastructure-configuration.git"
   endpoints = [
     {
       domain="aidbox-db"
