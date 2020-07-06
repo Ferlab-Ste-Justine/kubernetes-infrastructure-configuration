@@ -23,7 +23,8 @@ resource "null_resource" "kubernetes_infra_conf" {
   connection {
     host        = var.bastion_external_ip
     type        = "ssh"
-    user        = "ubuntu"
+    user        = var.bastion_user
+    port        = var.bastion_port
     private_key = var.bastion_key_pair.private_key
   }
 

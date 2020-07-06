@@ -18,6 +18,8 @@ In the future, we are very likely to add node labels as well.
   - name: Name of the secret
     attributes: Map of key-value pairs defining the secret's attributes
 - bastion_external_ip: ip the bastion can be sshed from
+- bastion_port: Port the bastion can be sshed from
+- bastion_user: User the bastion should be sshed as
 - bastion_key_pair: Ssh key that can be used to ssh on the bastion
 - artifacts_path: Path on the bastion where the **kubectl** binary and **admin.conf** file are located
 - manifests_path: Path where the kubernetes manifest files should be uploaded before getting applied. This path will get cleaned up afterwards.
