@@ -3,12 +3,14 @@ locals {
     "${path.module}/templates/endpoints.yml", 
     {
       endpoints = var.endpoints
+      metadata_identifier = var.kubernetes_metadata_identifier
     }
   )
   secrets_manifest = templatefile(
     "${path.module}/templates/secrets.yml", 
     {
       secrets = var.secrets
+      metadata_identifier = var.kubernetes_metadata_identifier
     }
   )
 }
@@ -47,8 +49,8 @@ resource "null_resource" "kubernetes_infra_conf" {
   #Apply the endpoints and secrets on the kubernetes cluster
   provisioner "remote-exec" {
     inline = [
-      length(var.endpoints) > 0 ? "${var.artifacts_path}/kubectl --kubeconfig=${var.artifacts_path}/admin.conf apply -f ${var.manifests_path}/endpoints.yml --namespace=${var.kubernetes_namespace}" : ":",
-      length(var.secrets) > 0 ? "${var.artifacts_path}/kubectl --kubeconfig=${var.artifacts_path}/admin.conf apply -f ${var.manifests_path}/secrets.yml --namespace=${var.kubernetes_namespace}" : ":",
+      length(var.endpoints) > 0 ? "${var.artifacts_path}/kubectl --kubeconfig=${var.artifacts_path}/admin.conf apply --prune=true --selector=\"${var.kubernetes_metadata_identifier}=infrastructure_services\" -f ${var.manifests_path}/endpoints.yml --namespace=${var.kubernetes_namespace}" : ":",
+      length(var.secrets) > 0 ? "${var.artifacts_path}/kubectl --kubeconfig=${var.artifacts_path}/admin.conf apply --prune=true --selector=\"${var.kubernetes_metadata_identifier}=infrastructure_secrets\" -f ${var.manifests_path}/secrets.yml --namespace=${var.kubernetes_namespace}" : ":",
       "rm -r ${var.manifests_path}"
     ]
   }

@@ -25,6 +25,7 @@ In the future, we are very likely to add node labels as well.
 - manifests_path: Path where the kubernetes manifest files should be uploaded before getting applied. This path will get cleaned up afterwards.
 - kubernetes_installation_id: ID uniquely identified the kubernetes installation. Useful to set an ordering dependency and also to retrigger provisioning when the kubernetes installation changes.
 - kubernetes_namespace: Namespace the generated resources should be created under. Defaults to 'default'
+- kubernetes_metadata_identifier: Metadata field that will be included in generated resources. When the module runs, pre-existing resources with this metadata field that are not present in the resources bring provisioned will be cleaned up. Defaults to **source**.
 
 ## Usage Example
 
