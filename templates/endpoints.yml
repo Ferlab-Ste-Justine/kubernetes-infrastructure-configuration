@@ -6,6 +6,8 @@ apiVersion: v1
 kind: Service
 metadata:
   name: ${endpoint.domain}
+  labels:
+    ${metadata_identifier}: infrastructure_services
 spec:
   type: ClusterIP
   ports:
@@ -15,6 +17,8 @@ kind: Endpoints
 apiVersion: v1
 metadata:
   name: ${endpoint.domain}
+  labels:
+    ${metadata_identifier}: infrastructure_services
 subsets:
   - addresses:
       - ip: ${endpoint.ip}
