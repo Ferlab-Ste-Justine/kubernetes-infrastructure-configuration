@@ -1,8 +1,8 @@
 locals {
-  endpoints_manifest = templatefile(
-    "${path.module}/templates/endpoints.yml", 
+  services_manifest = templatefile(
+    "${path.module}/templates/services.yml", 
     {
-      endpoints = var.endpoints
+      services = var.services
       metadata_identifier = var.kubernetes_metadata_identifier
     }
   )
@@ -18,7 +18,7 @@ locals {
 resource "null_resource" "kubernetes_infra_conf" {
   triggers = {
     kubernetes_installation_id = var.kubernetes_installation_id
-    endpoints_manifest         = local.endpoints_manifest
+    services_manifest         = local.services_manifest
     secrets_manifest           = local.secrets_manifest
   }
 
@@ -37,8 +37,8 @@ resource "null_resource" "kubernetes_infra_conf" {
   }
 
   provisioner "file" {
-    content     = local.endpoints_manifest
-    destination = "${var.manifests_path}/endpoints.yml"
+    content     = local.services_manifest
+    destination = "${var.manifests_path}/services.yml"
   }
 
   provisioner "file" {
@@ -46,10 +46,10 @@ resource "null_resource" "kubernetes_infra_conf" {
     destination = "${var.manifests_path}/secrets.yml"
   }
 
-  #Apply the endpoints and secrets on the kubernetes cluster
+  #Apply the services and secrets on the kubernetes cluster
   provisioner "remote-exec" {
     inline = [
-      length(var.endpoints) > 0 ? "${var.artifacts_path}/kubectl --kubeconfig=${var.artifacts_path}/admin.conf apply --prune=true --selector=\"${var.kubernetes_metadata_identifier}=infrastructure_services\" -f ${var.manifests_path}/endpoints.yml --namespace=${var.kubernetes_namespace}" : ":",
+      length(var.services) > 0 ? "${var.artifacts_path}/kubectl --kubeconfig=${var.artifacts_path}/admin.conf apply --prune=true --selector=\"${var.kubernetes_metadata_identifier}=infrastructure_services\" -f ${var.manifests_path}/services.yml --namespace=${var.kubernetes_namespace}" : ":",
       length(var.secrets) > 0 ? "${var.artifacts_path}/kubectl --kubeconfig=${var.artifacts_path}/admin.conf apply --prune=true --selector=\"${var.kubernetes_metadata_identifier}=infrastructure_secrets\" -f ${var.manifests_path}/secrets.yml --namespace=${var.kubernetes_namespace}" : ":",
       "rm -r ${var.manifests_path}"
     ]

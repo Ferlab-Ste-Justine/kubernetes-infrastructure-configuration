@@ -1,27 +1,32 @@
-%{ for endpoint in endpoints ~}
-%{ if index(endpoints, endpoint) > 0 ~}
+%{ for service in services ~}
+%{ if index(services, service) > 0 ~}
 ---
 %{ endif ~}
 apiVersion: v1
 kind: Service
 metadata:
-  name: ${endpoint.domain}
+  name: ${service.name}
   labels:
     ${metadata_identifier}: infrastructure_services
 spec:
   type: ClusterIP
+%{ if service.headless ~}
+  clusterIP: None
+%{ endif ~}
   ports:
-    - port: ${endpoint.port}
+    - port: ${service.port}
 ---
 kind: Endpoints
 apiVersion: v1
 metadata:
-  name: ${endpoint.domain}
+  name: ${service.name}
   labels:
     ${metadata_identifier}: infrastructure_services
 subsets:
   - addresses:
-      - ip: ${endpoint.ip}
+%{ for ip in split(",", service.ips) ~}
+      - ip: ${ip}
+%{ endfor ~}
     ports:
-      - port: ${endpoint.port}
+      - port: ${service.port}
 %{ endfor ~}
