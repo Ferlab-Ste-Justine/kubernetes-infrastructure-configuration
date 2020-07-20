@@ -32,52 +32,87 @@ In the future, we are very likely to add node labels as well.
 Here is an example of how the module might be used:
 
 ```
+#Install Kubernetes
 module "kubernetes_installation" {
-  source = "git::https://github.com/Ferlab-Ste-Justine/kubernetes-installation.git?ref=feature/output-installation-id"
+  source = "git::https://github.com/Ferlab-Ste-Justine/kubernetes-installation.git"
   master_ips = [for master in module.kubernetes_cluster.masters: master.ip]
   worker_ips = [for worker in module.kubernetes_cluster.workers: worker.ip]
-  bastion_external_ip = openstack_networking_floatingip_v2.bastion_floating_ip.address
-  load_balancer_external_ip = openstack_networking_floatingip_v2.k8_api_lb_floating_ip.address
+  bastion_external_ip = openstack_networking_floatingip_v2.edge_reverse_proxy_floating_ip.address
+  load_balancer_external_ip = openstack_networking_floatingip_v2.edge_reverse_proxy_floating_ip.address
   bastion_key_pair = openstack_compute_keypair_v2.bastion_external_keypair
-  kubespray_path = "/home/ubuntu/kubespray"
-  kubespray_artifacts_path = "/home/ubuntu/kubespray-artifacts"
+  bastion_port = 2222
+  provisioning_path = "/home/ubuntu/kubespray"
+  artifacts_path = "/home/ubuntu/kubespray-artifacts"
   cloud_init_sync_path = "/home/ubuntu/cloud-init-sync"
   bastion_dependent_ip = module.bastion.internal_ip
-  wait_on_ips = [module.kubernetes_cluster.load_balancer.ip]
+  wait_on_ips = [module.edge_reverse_proxy.ip]
 }
 
-module "aidbox_postgres" {
+#Keycloak database
+module "keycloak_postgres" {
   source = "git::https://github.com/Ferlab-Ste-Justine/openstack-postgres-standalone.git"
-  namespace = "aidbox"
+  namespace = "keycloak"
   image_id = module.ubuntu_bionic_image.id
   flavor_id = module.reference_infra.flavors.micro.id
   keypair_name = openstack_compute_keypair_v2.bastion_internal_keypair.name
   network_name = module.reference_infra.networks.internal.name
-  postgres_image = "aidbox/db:11.1.0"
-  postgres_user = "myuser"
-  postgres_database = "devbox"
+  postgres_image = "postgres:12.3"
+  postgres_user = "postgres"
+  postgres_database = "keycloak"
 }
 
+#Lectern database
+module "lectern_db" {
+  source = "git::https://github.com/Ferlab-Ste-Justine/openstack-mongodb-replicaset.git"
+  namespace = "lectern"
+  image_id = module.ubuntu_bionic_image.id
+  flavor_id = module.reference_infra.flavors.nano.id
+  network_name = module.reference_infra.networks.internal.name
+  keypair_name = openstack_compute_keypair_v2.bastion_internal_keypair.name
+  replicas_count = 3
+  bastion_external_ip = openstack_networking_floatingip_v2.edge_reverse_proxy_floating_ip.address
+  bastion_key_pair = openstack_compute_keypair_v2.bastion_external_keypair
+  bastion_port = 2222
+  setup_path = "/home/ubuntu/lectern-db-setup"
+}
+
+#Add kubernetes entities so that pods can talk to external keycloak database
 module "k8_infra_conf" {
   source = "git::https://github.com/Ferlab-Ste-Justine/kubernetes-infrastructure-configuration.git"
-  endpoints = [
+  services = [
     {
-      domain="aidbox-db"
-      ip=module.aidbox_postgres.ip
-      port="5432"
+      name = "keycloak-db"
+      ips = [module.keycloak_postgres.ip]
+      headless = false
+      port = "5432"
+    },
+    {
+      name = "lectern-db"
+      ips = [for replica in module.lectern_db.replicas: replica.ip]
+      headless = true
+      port = "27017"
     }
   ]
+  #Note: A future security improvement here will be to create more limited database-specific users
   secrets = [
     {
-      name = "aidox-db-credentials"
+      name = "keycloak-db-credentials"
       attributes = {
-        username="myuser"
-        password=module.aidbox_postgres.db_password
+        username = "postgres"
+        password = module.keycloak_postgres.db_password
+      }
+    },
+    {
+      name = "lectern-db-credentials"
+      attributes = {
+        username = "admin"
+        password = module.lectern_db.admin_password
       }
     }
   ]
-  bastion_external_ip = openstack_networking_floatingip_v2.bastion_floating_ip.address
+  bastion_external_ip = openstack_networking_floatingip_v2.edge_reverse_proxy_floating_ip.address
   bastion_key_pair = openstack_compute_keypair_v2.bastion_external_keypair
+  bastion_port = 2222
   artifacts_path = "/home/ubuntu/kubespray-artifacts"
   manifests_path = "/home/ubuntu/infrastructure-manifests"
   kubernetes_installation_id = module.kubernetes_installation.id

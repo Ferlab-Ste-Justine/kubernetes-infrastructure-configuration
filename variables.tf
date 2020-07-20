@@ -1,5 +1,5 @@
-variable "endpoints" {
-  description = "Array of endpoints abstracting external resources from the cluster, each entry defined by the following keys: domain, ip, port"
+variable "services" {
+  description = "Array of services abstracting external resources from the cluster, each entry defined by the following keys: name, ips, headless, port"
   type = list(any)
   default = []
 }
