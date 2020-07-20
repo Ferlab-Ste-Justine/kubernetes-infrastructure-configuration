@@ -15,7 +15,6 @@ spec:
 %{ endif ~}
   ports:
     - port: ${service.port}
-%{ for ip in service.ips ~}
 ---
 kind: Endpoints
 apiVersion: v1
@@ -25,8 +24,9 @@ metadata:
     ${metadata_identifier}: infrastructure_services
 subsets:
   - addresses:
+%{ for ip in split(",", service.ips) ~}
       - ip: ${ip}
+%{ endfor ~}
     ports:
       - port: ${service.port}
-%{ endfor ~}
 %{ endfor ~}

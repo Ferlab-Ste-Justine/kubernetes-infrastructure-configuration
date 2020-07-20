@@ -10,9 +10,10 @@ In the future, we are very likely to add node labels as well.
 
 ## Input Variables
 
-- endpoints: Array of external services with each entry having the following format:
-  - domain: Name the service will have internally in the kubernetes cluster
-  - ip: External ip of the service
+- services: Array of external services with each entry having the following format:
+  - name: Name the service will have internally in the kubernetes cluster
+  - ips: External ips of the service. To circumvent an observed bug in Terraform (on version 0.12.28), this needs to be passed in a single coma-separated string.
+  - headless: Whether kubernetes should load-balancer the service behind an intermediate ip (if false) or whether it should just handle dns and return all external ips dns queries on the service name (if true)
   - port: Port the external service can be reached at
 - secrets: Array of secrets with each entry taking the following format:
   - name: Name of the secret
@@ -76,19 +77,19 @@ module "lectern_db" {
   setup_path = "/home/ubuntu/lectern-db-setup"
 }
 
-#Add kubernetes entities so that pods can talk to external keycloak database
+#Add kubernetes entities so that pods can talk to external keycloak and lectern databases
 module "k8_infra_conf" {
-  source = "git::https://github.com/Ferlab-Ste-Justine/kubernetes-infrastructure-configuration.git"
+  source = "./kubernetes-infrastructure-configuration" //"git::https://github.com/Ferlab-Ste-Justine/kubernetes-infrastructure-configuration.git?ref=feature/multi-ips-and-headless-services-support"
   services = [
     {
       name = "keycloak-db"
-      ips = [module.keycloak_postgres.ip]
+      ips = module.keycloak_postgres.ip
       headless = false
       port = "5432"
     },
     {
       name = "lectern-db"
-      ips = [for replica in module.lectern_db.replicas: replica.ip]
+      ips = join(",", [for replica in module.lectern_db.replicas: replica.ip])
       headless = true
       port = "27017"
     }
