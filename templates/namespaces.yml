@@ -1,0 +1,11 @@
+%{ for namespace in namespaces ~}
+%{ if index(namespaces, namespace) > 0 ~}
+---
+%{ endif ~}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ${namespace}
+  labels:
+    ${metadata_identifier}: infrastructure_namespaces
+%{ endfor ~}
