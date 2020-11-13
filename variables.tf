@@ -5,8 +5,14 @@ variable "services" {
 }
 
 variable "secrets" {
-  description = "Array of secrets defined as the following structure: [{name=... , attributes={...}}, ...]"
+  description = "Array of secrets defined as the following structure: [{name=... , namespace=..., attributes={...}}, ...]"
   type = list(any)
+  default = []
+}
+
+variable "namespaces" {
+  description = "Array of namespaces"
+  type = list(string)
   default = []
 }
 
@@ -48,7 +54,7 @@ variable "kubernetes_installation_id" {
 }
 
 variable "kubernetes_namespace" {
-  description = "Namespace where resources are created"
+  description = "Default namespace where resources are created"
   type = string
   default = "default"
 }

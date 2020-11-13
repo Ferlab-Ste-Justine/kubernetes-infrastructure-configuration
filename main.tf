@@ -1,4 +1,11 @@
 locals {
+  namespaces_manifest = templatefile(
+    "${path.module}/templates/namespaces.yml", 
+    {
+      namespaces = var.namespaces
+      metadata_identifier = var.kubernetes_metadata_identifier
+    }
+  )
   services_manifest = templatefile(
     "${path.module}/templates/services.yml", 
     {
@@ -10,6 +17,7 @@ locals {
     "${path.module}/templates/secrets.yml", 
     {
       secrets = var.secrets
+      default_namespace = var.kubernetes_namespace
       metadata_identifier = var.kubernetes_metadata_identifier
     }
   )
@@ -18,7 +26,8 @@ locals {
 resource "null_resource" "kubernetes_infra_conf" {
   triggers = {
     kubernetes_installation_id = var.kubernetes_installation_id
-    services_manifest         = local.services_manifest
+    namespaces_manifest        = local.namespaces_manifest
+    services_manifest          = local.services_manifest
     secrets_manifest           = local.secrets_manifest
   }
 
@@ -37,6 +46,11 @@ resource "null_resource" "kubernetes_infra_conf" {
   }
 
   provisioner "file" {
+    content     = local.namespaces_manifest
+    destination = "${var.manifests_path}/namespaces.yml"
+  }
+
+  provisioner "file" {
     content     = local.services_manifest
     destination = "${var.manifests_path}/services.yml"
   }
@@ -49,8 +63,9 @@ resource "null_resource" "kubernetes_infra_conf" {
   #Apply the services and secrets on the kubernetes cluster
   provisioner "remote-exec" {
     inline = [
+      length(var.secrets) > 0 ? "${var.artifacts_path}/kubectl --kubeconfig=${var.artifacts_path}/admin.conf apply --prune=true --selector=\"${var.kubernetes_metadata_identifier}=infrastructure_namespaces\" -f ${var.manifests_path}/namespaces.yml" : ":",
       length(var.services) > 0 ? "${var.artifacts_path}/kubectl --kubeconfig=${var.artifacts_path}/admin.conf apply --prune=true --selector=\"${var.kubernetes_metadata_identifier}=infrastructure_services\" -f ${var.manifests_path}/services.yml --namespace=${var.kubernetes_namespace}" : ":",
-      length(var.secrets) > 0 ? "${var.artifacts_path}/kubectl --kubeconfig=${var.artifacts_path}/admin.conf apply --prune=true --selector=\"${var.kubernetes_metadata_identifier}=infrastructure_secrets\" -f ${var.manifests_path}/secrets.yml --namespace=${var.kubernetes_namespace}" : ":",
+      length(var.secrets) > 0 ? "${var.artifacts_path}/kubectl --kubeconfig=${var.artifacts_path}/admin.conf apply --prune=true --selector=\"${var.kubernetes_metadata_identifier}=infrastructure_secrets\" -f ${var.manifests_path}/secrets.yml" : ":",
       "rm -r ${var.manifests_path}"
     ]
   }

@@ -17,6 +17,7 @@ In the future, we are very likely to add node labels as well.
   - port: Port the external service can be reached at
 - secrets: Array of secrets with each entry taking the following format:
   - name: Name of the secret
+    namespace: Namespace of the secret
     attributes: Map of key-value pairs defining the secret's attributes
 - bastion_external_ip: ip the bastion can be sshed from
 - bastion_port: Port the bastion can be sshed from
@@ -25,7 +26,7 @@ In the future, we are very likely to add node labels as well.
 - artifacts_path: Path on the bastion where the **kubectl** binary and **admin.conf** file are located
 - manifests_path: Path where the kubernetes manifest files should be uploaded before getting applied. This path will get cleaned up afterwards.
 - kubernetes_installation_id: ID uniquely identified the kubernetes installation. Useful to set an ordering dependency and also to retrigger provisioning when the kubernetes installation changes.
-- kubernetes_namespace: Namespace the generated resources should be created under. Defaults to 'default'
+- kubernetes_namespace: Default namespace the generated resources should be created under if a more specific namespace is not specified. Defaults to 'default'
 - kubernetes_metadata_identifier: Metadata label that will be included in generated resources. When the module runs, pre-existing resources with this metadata field that are not present in the resources bring provisioned will be cleaned up. Defaults to **source**.
 
 ## Usage Example
