@@ -24,7 +24,7 @@ locals {
   flux_manifest = templatefile(
     "${path.module}/templates/flux.yml", 
     {
-      secrets = var.flux_instances
+      flux_instances = var.flux_instances
       metadata_identifier = var.kubernetes_metadata_identifier
     }
   )
