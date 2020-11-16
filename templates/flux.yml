@@ -1,17 +1,3 @@
-%{ for flux_instance in flux_instances ~}
-%{ if index(flux_instances, flux_instance) > 0 ~}
----
-%{ endif ~}
-# The service account, cluster roles, and cluster role binding are
-# only needed for Kubernetes with role-based access control (RBAC).
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  labels:
-    name: flux
-    ${metadata_identifier}: infrastructure_flux_instances
-  name: flux
-  namespace: ${flux_instance.namespace}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -25,6 +11,18 @@ rules:
     verbs: ['*']
   - nonResourceURLs: ['*']
     verbs: ['*']
+%{ for flux_instance in flux_instances ~}
+---
+# The service account, cluster roles, and cluster role binding are
+# only needed for Kubernetes with role-based access control (RBAC).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    name: flux
+    ${metadata_identifier}: infrastructure_flux_instances
+  name: flux
+  namespace: ${flux_instance.namespace}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
