@@ -4,6 +4,7 @@ kind: ClusterRole
 metadata:
   labels:
     name: flux
+    ${metadata_identifier}: infrastructure_flux_instances
   name: flux
 rules:
   - apiGroups: ['*']
