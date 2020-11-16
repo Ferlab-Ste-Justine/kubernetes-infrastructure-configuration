@@ -17,8 +17,15 @@ In the future, we are very likely to add node labels as well.
   - port: Port the external service can be reached at
 - secrets: Array of secrets with each entry taking the following format:
   - name: Name of the secret
-    namespace: Namespace of the secret
-    attributes: Map of key-value pairs defining the secret's attributes
+  - namespace: Namespace of the secret
+  - attributes: Map of key-value pairs defining the secret's attributes
+- flux_instances: Array of fluxcd instances with each entry taking the following format:
+  - namespace: Namespace of the flux instance. It should be pre-existing and contain a **flux-git-deploy** with an **identity** key containing a valid private ssh key for **user**
+  - repository: Repository the flux instance should monitor
+  - branch: Branch of the repository the flux instance should monitor
+  - path: Directory path the flux instance should monitor
+  - user: User the flux instance should access the git repository as
+  - email: Email of the user the flux instance should access the git repository as
 - bastion_external_ip: ip the bastion can be sshed from
 - bastion_port: Port the bastion can be sshed from
 - bastion_user: User the bastion should be sshed as

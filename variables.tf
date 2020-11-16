@@ -16,6 +16,12 @@ variable "namespaces" {
   default = []
 }
 
+variable "flux_instances" {
+  description = "Instances of fluxcd that will be running on the kubernetes cluster"
+  type = list(any)
+  default = []
+}
+
 variable "bastion_external_ip" {
   description = "External ip of the bastion"
   type = string
