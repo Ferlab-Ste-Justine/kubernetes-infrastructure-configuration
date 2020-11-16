@@ -1,7 +1,19 @@
-%{ for flux_instance in flux_instances ~}
-%{ if index(flux_instances, flux_instance) > 0 ~}
 ---
-%{ endif ~}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    name: flux
+    ${metadata_identifier}: infrastructure_flux_instances
+  name: flux
+rules:
+  - apiGroups: ['*']
+    resources: ['*']
+    verbs: ['*']
+  - nonResourceURLs: ['*']
+    verbs: ['*']
+%{ for flux_instance in flux_instances ~}
+---
 # The service account, cluster roles, and cluster role binding are
 # only needed for Kubernetes with role-based access control (RBAC).
 apiVersion: v1
@@ -13,20 +25,7 @@ metadata:
   name: flux
   namespace: ${flux_instance.namespace}
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
-kind: ClusterRole
-metadata:
-  labels:
-    name: flux
-  name: flux
-rules:
-  - apiGroups: ['*']
-    resources: ['*']
-    verbs: ['*']
-  - nonResourceURLs: ['*']
-    verbs: ['*']
----
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
@@ -111,7 +110,7 @@ spec:
         # There are no ":latest" images for flux. Find the most recent
         # release or image version at https://hub.docker.com/r/fluxcd/flux/tags
         # and replace the tag here.
-        image: docker.io/fluxcd/flux:1.20.2
+        image: docker.io/fluxcd/flux:1.21.0
         imagePullPolicy: IfNotPresent
         resources:
           requests:
