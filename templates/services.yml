@@ -1,7 +1,8 @@
-%{ for service in services ~}
-%{ if index(services, service) > 0 ~}
+%{ if length(services) == 0 ~}
 ---
 %{ endif ~}
+%{ for service in services ~}
+---
 apiVersion: v1
 kind: Service
 metadata:

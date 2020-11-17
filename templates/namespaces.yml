@@ -1,7 +1,8 @@
-%{ for namespace in namespaces ~}
-%{ if index(namespaces, namespace) > 0 ~}
+%{ if length(namespaces) == 0 ~}
 ---
 %{ endif ~}
+%{ for namespace in namespaces ~}
+---
 apiVersion: v1
 kind: Namespace
 metadata:
