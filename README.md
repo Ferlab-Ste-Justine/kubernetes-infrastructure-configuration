@@ -2,14 +2,16 @@
 
 This terraform module provision kubernetes resources that are highly coupled with the infrastructure and will change as the infrastructure changes.
 
-Currently, this module limits itself to adding endpoints for external services and secrets derived from terraform execution.
-
-In the future, we are very likely to add node labels as well.
+Supports the creation of the following kubernetes resources:
+- namespaces
+- services and endpoints derived from external services
+- secrets derived from terraform execution
+- fluxcd (version 1) instances
 
 # Usage
 
 ## Input Variables
-
+- namespaces: Array of namespaces to create
 - services: Array of external services with each entry having the following format:
   - name: Name the service will have internally in the kubernetes cluster
   - ips: External ips of the service. To circumvent an observed bug in Terraform (on version 0.12.28), this needs to be passed in a single coma-separated string.
@@ -41,89 +43,99 @@ In the future, we are very likely to add node labels as well.
 Here is an example of how the module might be used:
 
 ```
-#Install Kubernetes
-module "kubernetes_installation" {
-  source = "git::https://github.com/Ferlab-Ste-Justine/kubernetes-installation.git"
-  master_ips = [for master in module.kubernetes_cluster.masters: master.ip]
-  worker_ips = [for worker in module.kubernetes_cluster.workers: worker.ip]
-  bastion_external_ip = openstack_networking_floatingip_v2.edge_reverse_proxy_floating_ip.address
-  load_balancer_external_ip = openstack_networking_floatingip_v2.edge_reverse_proxy_floating_ip.address
-  bastion_key_pair = openstack_compute_keypair_v2.bastion_external_keypair
-  bastion_port = 2222
-  provisioning_path = "/home/ubuntu/kubespray"
-  artifacts_path = "/home/ubuntu/kubespray-artifacts"
-  cloud_init_sync_path = "/home/ubuntu/cloud-init-sync"
-  bastion_dependent_ip = module.bastion.internal_ip
-  wait_on_ips = [module.edge_reverse_proxy.ip]
-}
-
-#Keycloak database
-module "keycloak_postgres" {
-  source = "git::https://github.com/Ferlab-Ste-Justine/openstack-postgres-standalone.git"
-  namespace = "keycloak"
-  image_id = module.ubuntu_bionic_image.id
-  flavor_id = module.reference_infra.flavors.micro.id
-  keypair_name = openstack_compute_keypair_v2.bastion_internal_keypair.name
-  network_name = module.reference_infra.networks.internal.name
-  postgres_image = "postgres:12.3"
-  postgres_user = "postgres"
-  postgres_database = "keycloak"
-}
-
-#Lectern database
-module "lectern_db" {
-  source = "git::https://github.com/Ferlab-Ste-Justine/openstack-mongodb-replicaset.git"
-  namespace = "lectern"
-  image_id = module.ubuntu_bionic_image.id
-  flavor_id = module.reference_infra.flavors.nano.id
-  network_name = module.reference_infra.networks.internal.name
-  keypair_name = openstack_compute_keypair_v2.bastion_internal_keypair.name
-  replicas_count = 3
-  bastion_external_ip = openstack_networking_floatingip_v2.edge_reverse_proxy_floating_ip.address
-  bastion_key_pair = openstack_compute_keypair_v2.bastion_external_keypair
-  bastion_port = 2222
-  setup_path = "/home/ubuntu/lectern-db-setup"
-}
-
-#Add kubernetes entities so that pods can talk to external keycloak and lectern databases
-module "k8_infra_conf" {
-  source = "./kubernetes-infrastructure-configuration" //"git::https://github.com/Ferlab-Ste-Justine/kubernetes-infrastructure-configuration.git?ref=feature/multi-ips-and-headless-services-support"
+module "k8_v1_19_3_alpha_infra_conf" {
+  source = "git::https://github.com/Ferlab-Ste-Justine/kubernetes-infrastructure-configuration.git"
+  namespaces = [
+    "flux-clin-qa",
+    "flux-cqdg-qa"
+  ]
   services = [
     {
       name = "keycloak-db"
+      namespace = "default"
       ips = module.keycloak_postgres.ip
       headless = false
       port = "5432"
     },
     {
-      name = "lectern-db"
-      ips = join(",", [for replica in module.lectern_db.replicas: replica.ip])
+      name = "elasticsearch-workers"
+      namespace = "default"
+      ips = join(",", [for worker in module.elasticsearch_cluster.workers: worker.ip])
+      headless = false
+      port = "9200"
+    },
+    {
+      name = "mongodb-replicaset-lectern-${var.namespace}-1"
+      namespace = "default"
+      ips = module.lectern_db.replicas.0.ip
+      headless = true
+      port = "27017"
+    },
+    {
+      name = "mongodb-replicaset-lectern-${var.namespace}-2"
+      namespace = "default"
+      ips = module.lectern_db.replicas.1.ip
+      headless = true
+      port = "27017"
+    },
+    {
+      name = "mongodb-replicaset-lectern-${var.namespace}-3"
+      namespace = "default"
+      ips = module.lectern_db.replicas.2.ip
       headless = true
       port = "27017"
     }
   ]
-  #Note: A future security improvement here will be to create more limited database-specific users
   secrets = [
     {
       name = "keycloak-db-credentials"
+      namespace = "default"
       attributes = {
-        username = "postgres"
+        username = "mydbadmin"
         password = module.keycloak_postgres.db_password
       }
     },
     {
       name = "lectern-db-credentials"
+      namespace = "default"
       attributes = {
-        username = "admin"
+        username = "mydbadmin"
         password = module.lectern_db.admin_password
+      }
+    },
+    {
+      name = "flux-git-deploy"
+      namespace = "flux-clin-qa"
+      attributes = {
+        identity = var.flux_private_key
+      }
+    },
+    {
+      name = "flux-git-deploy"
+      namespace = "flux-cqdg-qa"
+      attributes = {
+        identity = var.flux_private_key
       }
     }
   ]
-  bastion_external_ip = openstack_networking_floatingip_v2.edge_reverse_proxy_floating_ip.address
-  bastion_key_pair = openstack_compute_keypair_v2.bastion_external_keypair
-  bastion_port = 2222
-  artifacts_path = "/home/ubuntu/kubespray-artifacts"
-  manifests_path = "/home/ubuntu/infrastructure-manifests"
-  kubernetes_installation_id = module.kubernetes_installation.id
+  flux_instances = [
+    {
+      namespace = "flux-clin-qa"
+      repository = "git@github.com:Ferlab-Ste-Justine/clin-environments.git"
+      branch = "master"
+      path = "qa"
+    },
+    {
+      namespace = "flux-cqdg-qa"
+      repository = "git@github.com:Ferlab-Ste-Justine/cqdg-environments.git"
+      branch = "master"
+      path = "qa"
+    }
+  ]
+  bastion_external_ip = var.bastion_external_ip
+  bastion_key_pair = var.bastion_external_keypair
+  artifacts_path = "/home/ubuntu/${var.namespace}/k8-v1.19.3-alpha/kubespray-artifacts"
+  manifests_path = "/home/ubuntu/${var.namespace}/k8-v1.19.3-alpha/infrastructure-manifests"
+  kubernetes_installation_id = module.kubernetes_v1_19_3_alpha_installation.id
 }
 ```

@@ -10,6 +10,7 @@ locals {
     "${path.module}/templates/services.yml", 
     {
       services = var.services
+      default_namespace = var.kubernetes_namespace
       metadata_identifier = var.kubernetes_metadata_identifier
     }
   )
