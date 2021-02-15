@@ -71,6 +71,11 @@ spec:
         beta.kubernetes.io/os: linux
       serviceAccountName: flux
       volumes:
+%{ if lookup(flux_instance, "image_pull_secret", "") != "" ~}
+      - name: images-pull
+        secret:
+          secretName: ${flux_instance.image_pull_secret}
+%{ endif ~} 
       - name: git-key
         secret:
           secretName: flux-git-deploy
