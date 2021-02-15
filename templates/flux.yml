@@ -136,6 +136,11 @@ spec:
           initialDelaySeconds: 5
           timeoutSeconds: 5
         volumeMounts:
+%{ if lookup(flux_instance, "image_pull_secret", "") != "" ~}
+        - name: images-pull
+          mountpath: /opt/images-pull
+          readOnly: true
+%{ endif ~}        
         - name: git-key
           mountPath: /etc/fluxd/ssh # to match location given in image's /etc/ssh/config
           readOnly: true # this will be the case perforce in K8s >=1.10
@@ -174,6 +179,11 @@ spec:
         #     name: flux-git-auth
 
         args:
+%{ if lookup(flux_instance, "image_pull_filename", "") != "" ~}
+        - --docker-config=/opt/images-pull/${flux_instance.image_pull_filename}
+%{ endif ~}
+        - --git-poll-interval=${lookup(flux_instance, "git_poll_interval", "2m")}
+        - --sync-garbage-collection=${lookup(flux_instance, "garbage_collection", "true")}
 
         # If you deployed memcached in a different namespace to flux,
         # or with a different service name, you can supply these
