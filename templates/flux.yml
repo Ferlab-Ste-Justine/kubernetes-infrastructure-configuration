@@ -143,7 +143,7 @@ spec:
         volumeMounts:
 %{ if lookup(flux_instance, "image_pull_secret", "") != "" ~}
         - name: images-pull
-          mountpath: /opt/images-pull
+          mountPath: /opt/images-pull
           readOnly: true
 %{ endif ~}        
         - name: git-key
