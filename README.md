@@ -28,6 +28,10 @@ Supports the creation of the following kubernetes resources:
   - path: Directory path the flux instance should monitor
   - user: User the flux instance should access the git repository as
   - email: Email of the user the flux instance should access the git repository as
+  - git_poll_interval: Interval at which the git repository should be polled for new commits. Defaults to '2m'.
+  - garbage_collection: Determine if flux will garbage collect resources it created that are no longer present in the git reference repo. Defaults to 'true'.
+  - image_pull_secret: Optional name of secret containing credentials to pull images from registries
+  - image_pull_filename: File name of the configuration file containing the credentials to pull images
 - bastion_external_ip: ip the bastion can be sshed from
 - bastion_port: Port the bastion can be sshed from
 - bastion_user: User the bastion should be sshed as
