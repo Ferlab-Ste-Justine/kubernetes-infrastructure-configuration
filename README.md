@@ -20,6 +20,7 @@ Supports the creation of the following kubernetes resources:
 - secrets: Array of secrets with each entry taking the following format:
   - name: Name of the secret
   - namespace: Namespace of the secret
+  - type: Type of the secret. Defaults to **Opaque**.
   - attributes: Map of key-value pairs defining the secret's attributes
 - flux_instances: Array of fluxcd instances with each entry taking the following format:
   - namespace: Namespace of the flux instance. It should be pre-existing and contain a **flux-git-deploy** with an **identity** key containing a valid private ssh key for **user**
