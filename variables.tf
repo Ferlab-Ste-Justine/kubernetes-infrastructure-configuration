@@ -8,6 +8,7 @@ variable "secrets" {
   description = "Array of secrets defined as the following structure: [{name=... , namespace=..., attributes={...}}, ...]"
   type = list(any)
   default = []
+  sensitive = true
 }
 
 variable "namespaces" {
@@ -42,6 +43,7 @@ variable "bastion_user" {
 variable "bastion_key_pair" {
   description = "SSh key pair"
   type = any
+  sensitive = true
 }
 
 variable "artifacts_path" {
