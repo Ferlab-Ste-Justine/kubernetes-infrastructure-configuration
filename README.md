@@ -6,6 +6,7 @@ Supports the creation of the following kubernetes resources:
 - namespaces
 - services and endpoints derived from external services
 - secrets derived from terraform execution
+- configmaps derived from terraform execution
 - fluxcd (version 1) instances
 
 # Usage
