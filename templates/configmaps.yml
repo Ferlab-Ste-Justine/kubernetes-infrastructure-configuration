@@ -1,0 +1,17 @@
+%{ if length(configmaps) == 0 ~}
+---
+%{ endif ~}
+%{ for configmap in configmaps ~}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ${configmap.name}
+  namespace: ${lookup(configmap, "namespace", default_namespace)}
+  labels:
+    ${metadata_identifier}: infrastructure_configmaps
+data:
+%{ for key,val in configmap.attributes ~}
+  ${key}: ${val}
+%{ endfor ~}
+%{ endfor ~}
