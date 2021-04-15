@@ -22,6 +22,14 @@ locals {
       metadata_identifier = var.kubernetes_metadata_identifier
     }
   )
+  configmaps_manifest = templatefile(
+    "${path.module}/templates/configmaps.yml", 
+    {
+      configmaps = var.configmaps
+      default_namespace = var.kubernetes_namespace
+      metadata_identifier = var.kubernetes_metadata_identifier
+    }
+  )
   flux_manifest = templatefile(
     "${path.module}/templates/flux.yml", 
     {
@@ -37,6 +45,7 @@ resource "null_resource" "kubernetes_infra_conf" {
     namespaces_manifest        = local.namespaces_manifest
     services_manifest          = local.services_manifest
     secrets_manifest           = local.secrets_manifest
+    configmaps_manifest        = local.configmaps_manifest
     flux_manifest              = local.flux_manifest
   }
 
@@ -70,6 +79,11 @@ resource "null_resource" "kubernetes_infra_conf" {
   }
 
   provisioner "file" {
+    content     = local.configmaps_manifest
+    destination = "${var.manifests_path}/configmaps.yml"
+  }
+
+  provisioner "file" {
     content     = local.flux_manifest
     destination = "${var.manifests_path}/flux.yml"
   }
@@ -80,6 +94,7 @@ resource "null_resource" "kubernetes_infra_conf" {
       length(var.secrets) > 0 ? "${var.artifacts_path}/kubectl --kubeconfig=${var.artifacts_path}/admin.conf apply --prune=true --selector=\"${var.kubernetes_metadata_identifier}=infrastructure_namespaces\" -f ${var.manifests_path}/namespaces.yml" : ":",
       length(var.services) > 0 ? "${var.artifacts_path}/kubectl --kubeconfig=${var.artifacts_path}/admin.conf apply --prune=true --selector=\"${var.kubernetes_metadata_identifier}=infrastructure_services\" -f ${var.manifests_path}/services.yml" : ":",
       length(var.secrets) > 0 ? "${var.artifacts_path}/kubectl --kubeconfig=${var.artifacts_path}/admin.conf apply --prune=true --selector=\"${var.kubernetes_metadata_identifier}=infrastructure_secrets\" -f ${var.manifests_path}/secrets.yml" : ":",
+      length(var.configmaps) > 0 ? "${var.artifacts_path}/kubectl --kubeconfig=${var.artifacts_path}/admin.conf apply --prune=true --selector=\"${var.kubernetes_metadata_identifier}=infrastructure_configmaps\" -f ${var.manifests_path}/configmaps.yml" : ":",
       length(var.flux_instances) > 0 ? "${var.artifacts_path}/kubectl --kubeconfig=${var.artifacts_path}/admin.conf apply --prune=true --selector=\"${var.kubernetes_metadata_identifier}=infrastructure_flux_instances\" -f ${var.manifests_path}/flux.yml" : ":",
       "rm -r ${var.manifests_path}"
     ]

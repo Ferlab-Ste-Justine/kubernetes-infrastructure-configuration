@@ -10,6 +10,12 @@ variable "secrets" {
   default = []
 }
 
+variable "configmaps" {
+  description = "Array of configmaps defined as the following structure: [{name=... , namespace=..., attributes={...}}, ...]"
+  type = list(any)
+  default = []
+}
+
 variable "namespaces" {
   description = "Array of namespaces"
   type = list(string)
